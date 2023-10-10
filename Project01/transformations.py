@@ -54,16 +54,14 @@ def apply_piecewise_linear_transformation(image, segments):
     # Converter a imagem para array numpy
     img_array = np.array(image)
 
+    # Inicializar uma matriz para armazenar a imagem transformada
+    transformed_img_array = np.zeros_like(img_array)
+
     # Aplicar a transformação linear definida por partes
-    transformed_img_array = np.piecewise(img_array, [
-        (img_array >= segments[0][0]) & (img_array < segments[0][1]),
-        (img_array >= segments[1][0]) & (img_array < segments[1][1]),
-        # Adicione mais condições para outros segmentos, se necessário
-    ], [
-        lambda x: segments[0][2] * (x - segments[0][0]),
-        lambda x: segments[1][2] * (x - segments[1][0]),
-        # Adicione mais transformações para outros segmentos, se necessário
-    ], 0)
+    for i, segment in enumerate(segments):
+        start, end, slope = segment
+        mask = (img_array >= start) & (img_array <= end)
+        transformed_img_array[mask] = slope * (img_array[mask] - start)
 
     # Normalizar os valores para o intervalo [0, 255]
     transformed_img_array = np.clip(transformed_img_array, 0, 255)
@@ -75,3 +73,78 @@ def apply_piecewise_linear_transformation(image, segments):
     transformed_image = PIL.Image.fromarray(transformed_img_array)
 
     return transformed_image
+
+def hide_message(image, message):
+    img_array = np.array(image)
+
+    # Verificar se a imagem é colorida ou em escala de cinza
+    is_color_image = len(img_array.shape) == 3 and img_array.shape[2] == 3
+
+    # Transformar a mensagem em uma sequência de bits
+    bits = ''.join(format(ord(c), '08b') for c in message)
+
+    # Garantir que a mensagem cabe na imagem
+    num_pixels_needed = len(bits)
+    num_pixels_available = img_array.size // (3 if is_color_image else 1)  # Corrigindo o cálculo do número de pixels disponíveis
+
+    if num_pixels_needed > num_pixels_available:
+        raise ValueError("A mensagem é muito longa para a imagem fornecida.")
+
+    # Iterar sobre cada pixel e substituir os bits menos significativos pela mensagem
+    bit_index = 0
+    for i in range(img_array.shape[0]):
+        for j in range(img_array.shape[1]):
+            if is_color_image:
+                for k in range(img_array.shape[2]):
+                    if bit_index < len(bits):
+                        img_array[i][j][k] = (img_array[i][j][k] & 0b11111110) | int(bits[bit_index])
+                        bit_index += 1
+                    else:
+                        break
+                else:
+                    continue
+                break
+            else:
+                if bit_index < len(bits):
+                    img_array[i][j] = (img_array[i][j] & 0b11111110) | int(bits[bit_index])
+                    bit_index += 1
+                else:
+                    break
+        else:
+            continue
+        break
+
+    # Criar uma nova imagem a partir do array modificado
+    stego_image = PIL.Image.fromarray(img_array)
+
+    return stego_image
+
+def reveal_message(stego_image):
+    img_array = np.array(stego_image)
+
+    # Verificar se a imagem é colorida ou em escala de cinza
+    is_color_image = len(img_array.shape) == 3 and img_array.shape[2] == 3
+
+    # Inicializar a lista para armazenar os bits da mensagem
+    bits = []
+
+    # Extrair os bits menos significativos dos pixels
+    for i in range(img_array.shape[0]):
+        for j in range(img_array.shape[1]):
+            if is_color_image:
+                for k in range(img_array.shape[2]):
+                    bits.append(img_array[i][j][k] & 1)
+            else:
+                bits.append(img_array[i][j] & 1)
+
+    # Reconstruir a mensagem a partir dos bits
+    message = ""
+    byte = ""
+    for bit in bits:
+        byte += str(bit)
+        if len(byte) == 8:
+            message += chr(int(byte, 2))
+            byte = ""
+
+    return message
+

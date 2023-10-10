@@ -48,6 +48,11 @@ filter_column = [
     [sg.Text("Segment 1 Start:"), sg.InputText(key="-SEGMENT1_START-")],
     [sg.Text("Segment 1 End:"), sg.InputText(key="-SEGMENT1_END-")],
     [sg.Text("Segment 1 Slope:"), sg.InputText(key="-SEGMENT1_SLOPE-")],
+    [sg.Text("Segment 2 Start:"), sg.InputText(key="-SEGMENT2_START-")],
+    [sg.Text("Segment 2 End:"), sg.InputText(key="-SEGMENT2_END-")],
+    [sg.Text("Segment 2 Slope:"), sg.InputText(key="-SEGMENT2_SLOPE-")],
+    [sg.Text("Message to Hide:"), sg.InputText(key="-MESSAGE-")],
+    [sg.Button("Hide Message"),sg.Button("Reveal Message")],
 ]
 
 # ----- Layout completo -----
@@ -152,9 +157,13 @@ while True:
                 segment1_end = float(values["-SEGMENT1_END-"])
                 segment1_slope = float(values["-SEGMENT1_SLOPE-"])
 
+                segment2_start = float(values["-SEGMENT2_START-"])
+                segment2_end = float(values["-SEGMENT2_END-"])
+                segment2_slope = float(values["-SEGMENT2_SLOPE-"])
+
                 # Definir os segmentos
-                segments = [(segment1_start, segment1_end, segment1_slope)]
-                # Adicione mais segmentos, se necessário
+                segments = [(segment1_start, segment1_end, segment1_slope),
+                            (segment2_start, segment2_end, segment2_slope)]
                 
                 # Aplicar a transformação linear definida por partes à imagem
                 image = apply_piecewise_linear_transformation(image, segments)
@@ -167,5 +176,36 @@ while True:
 
         except Exception as e:
             print(e)
+
+    elif event == "Hide Message":
+        try:
+            if "image" in locals():
+                # Obter a mensagem inserida pelo usuário
+                message = values["-MESSAGE-"]
+
+                # Aplicar a transformação esteganográfica à imagem
+                stego_image = hide_message(image, message)
+
+                # Atualizar a imagem exibida com a imagem esteganográfica
+                resized_stego_image = resize_image(stego_image, max_width=500, max_height=500)
+                stego_image_data = convert_to_bytes(resized_stego_image)
+                window['-IMAGE-'].update(data=stego_image_data)
+
+        except Exception as e:
+            print("Ocorreu um erro ao aplicar a transformação esteganográfica:", str(e))
+
+    elif event == "Reveal Message":
+        try:
+            if "stego_image" in locals():
+                # Revelar a mensagem oculta na imagem esteganográfica
+                revealed_message = reveal_message(stego_image)
+                print(revealed_message)
+                sg.popup("Mensagem oculta:", revealed_message)
+
+        except Exception as e:
+            sg.popup_error("Ocorreu um erro ao revelar a mensagem oculta:", str(e))
+
+
+
 
 window.close()
