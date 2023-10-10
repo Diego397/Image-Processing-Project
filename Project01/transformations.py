@@ -89,6 +89,10 @@ def hide_message(image, message):
 
     if num_pixels_needed > num_pixels_available:
         raise ValueError("A mensagem é muito longa para a imagem fornecida.")
+    
+    while num_pixels_needed < num_pixels_available:
+        bits += "0"
+        num_pixels_needed += 1
 
     # Iterar sobre cada pixel e substituir os bits menos significativos pela mensagem
     bit_index = 0
