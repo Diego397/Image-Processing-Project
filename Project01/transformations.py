@@ -194,6 +194,9 @@ def apply_custom_filter(image, custom_filter):
     # Aplicar o filtro por convolução
     filtered_image_array = convolution(img_array, custom_filter)
 
+    if np.min(filtered_image_array) < 0:
+        filtered_image_array += abs(np.min(filtered_image_array))
+
     # Normalizar os valores para o intervalo [0, 255]
     filtered_image_array = (filtered_image_array / np.max(filtered_image_array)) * 255
 

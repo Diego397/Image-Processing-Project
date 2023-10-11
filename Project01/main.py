@@ -228,7 +228,7 @@ while True:
         except Exception as e:
             print("Ocorreu um erro ao equalizar o histograma:", str(e))
 
-    if event == "Apply Custom Filter":
+    elif event == "Apply Custom Filter":
         try:
             if "image" in locals():
                 # Obter o tamanho do filtro inserido pelo usuário
