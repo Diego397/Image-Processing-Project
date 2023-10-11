@@ -2,7 +2,6 @@ import numpy as np
 import PIL.Image
 import matplotlib.pyplot as plt
 
-
 def apply_negative(image):
     # Converter a imagem para array numpy
     img_array = np.array(image)
@@ -154,9 +153,7 @@ def reveal_message(stego_image):
 
     return message
 
-
-
-def calculate_histogram(image):
+def plot_histogram(image):
     grayscale_image = image.convert('L')
     pixels = list(grayscale_image.getdata())
     plt.figure()
@@ -167,8 +164,63 @@ def calculate_histogram(image):
     plt.tight_layout()
     plt.show()
 
-# Função para equalizar o histograma de uma imagem
 def equalize_histogram(image):
     grayscale_image = image.convert('L')
-    equalized_image = PIL.ImageOps.equalize(grayscale_image)
+    pixels = list(grayscale_image.getdata())
+
+    # Calcular o histograma
+    histogram = [0] * 256
+    for pixel_value in pixels:
+        histogram[pixel_value] += 1
+
+    # Calcular a função de distribuição acumulada (CDF)
+    cdf = [sum(histogram[:i+1]) for i in range(256)]
+    cdf_normalized = [((cdf_val - min(cdf)) / (grayscale_image.width * grayscale_image.height - min(cdf))) * 255 for cdf_val in cdf]
+
+    # Equalizar a imagem usando a CDF
+    equalized_pixels = [int(cdf_normalized[pixel_value]) for pixel_value in pixels]
+
+    # Remodelar a imagem equalizada
+    equalized_image = PIL.Image.new('L', grayscale_image.size)
+    equalized_image.putdata(equalized_pixels)
+
     return equalized_image
+
+def apply_custom_filter(image, custom_filter):
+    # Converter a imagem para escala de cinza
+    grayscale_image = image.convert('L')
+    img_array = np.array(grayscale_image)
+
+    # Aplicar o filtro por convolução
+    filtered_image_array = convolution(img_array, custom_filter)
+
+    # Normalizar os valores para o intervalo [0, 255]
+    filtered_image_array = (filtered_image_array / np.max(filtered_image_array)) * 255
+
+    # Converter de volta para uint8
+    filtered_image_array = filtered_image_array.astype('uint8')
+
+    # Criar uma nova imagem a partir do array transformado
+    filtered_image = PIL.Image.fromarray(filtered_image_array)
+
+    return filtered_image
+
+def convolution(image_array, kernel):
+    height, width = image_array.shape
+    k_height, k_width = kernel.shape
+    pad_height = k_height // 2
+    pad_width = k_width // 2
+
+    # Aplicar zero padding
+    padded_image = np.pad(image_array, ((pad_height, pad_height), (pad_width, pad_width)), mode='constant')
+
+    # Inicializar a matriz resultante
+    result = np.zeros((height, width))
+
+    # Realizar a convolução
+    for i in range(height):
+        for j in range(width):
+            region = padded_image[i:i+k_height, j:j+k_width]
+            result[i, j] = np.sum(region * kernel)
+
+    return result

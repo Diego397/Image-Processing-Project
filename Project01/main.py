@@ -2,6 +2,7 @@ import PySimpleGUI as sg
 import os.path
 import io
 import PIL.Image
+from fractions import Fraction
 from transformations import *
 
 def convert_to_bytes(image, format="PNG"):
@@ -49,6 +50,9 @@ filter_column = [
     [sg.Text("Segment 2 Slope:"), sg.InputText(key="-SEGMENT2_SLOPE-")],
     [sg.Button("Hide Message"), sg.Button("Reveal Message"), sg.Text("Message to Hide:"), sg.InputText(key="-MESSAGE-")],
     [sg.Button("Calculate Histogram"), sg.Button("Equalize Histogram")],
+    [sg.Text("Filter Size (odd number):"), sg.InputText(key="-FILTER_SIZE-")],
+    [sg.Text("Custom Filter (comma-separated values):"), sg.InputText(key="-CUSTOM_FILTER-")],
+    [sg.Button("Apply Custom Filter")]
 ]
 
 # ----- Layout completo -----
@@ -204,7 +208,7 @@ while True:
     elif event == "Calculate Histogram":
         try:
             if "image" in locals():
-                calculate_histogram(image)
+                plot_histogram(image)
 
         except Exception as e:
             print("Ocorreu um erro ao calcular o histograma:", str(e))
@@ -213,15 +217,47 @@ while True:
         try:
             if "image" in locals():
                 grayscale_image = image.convert('L')
-                equalized_image = PIL.ImageOps.equalize(grayscale_image)
+                equalized_image = equalize_histogram(grayscale_image)
                 
                 resized_equalized_image = resize_image(equalized_image, max_width=500, max_height=500)
                 equalized_image_data = convert_to_bytes(resized_equalized_image)
                 window['-IMAGE-'].update(data=equalized_image_data)
                 
-                calculate_histogram(equalized_image)
+                plot_histogram(equalized_image)
 
         except Exception as e:
             print("Ocorreu um erro ao equalizar o histograma:", str(e))
+
+    if event == "Apply Custom Filter":
+        try:
+            if "image" in locals():
+                # Obter o tamanho do filtro inserido pelo usuário
+                filter_size = int(values["-FILTER_SIZE-"]) if values["-FILTER_SIZE-"] else 3
+
+                # Obter a matriz do filtro inserida pelo usuário
+                custom_filter_values = values["-CUSTOM_FILTER-"]
+                custom_filter_values = custom_filter_values.split(',')
+                custom_filter_values = [val.strip() for val in custom_filter_values if val.strip()]
+
+                if len(custom_filter_values) != filter_size * filter_size:
+                    raise ValueError("Número inválido de valores para a matriz do filtro.")
+
+                # Converter os valores da matriz do filtro para frações
+                custom_filter_values = [Fraction(val) for val in custom_filter_values]
+
+                # Reshape para o tamanho do filtro
+                custom_filter = np.array(custom_filter_values).reshape(filter_size, filter_size)
+
+                # Aplicar o filtro customizado à imagem
+                image = apply_custom_filter(image, custom_filter)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar o filtro customizado:", str(e))
+
+        except Exception as e:
+            print(e)
 
 window.close()
