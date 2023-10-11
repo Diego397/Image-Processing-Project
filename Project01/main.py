@@ -22,7 +22,6 @@ def resize_image(image, max_width, max_height):
         image = image.resize((new_width, new_height))
     return image
 
-
 # Primeira coluna
 file_list_column = [   
     [sg.Text("Image Folder"), sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"), sg.FolderBrowse()],
@@ -38,12 +37,9 @@ image_viewer_column = [
 ]
 
 filter_column = [
-    [sg.Text("Filters:")],
     [sg.Button("Negative")],
-    [sg.Button("Logarithmic Transformation")],
-    [sg.Text("Constant 'c':"), sg.InputText(key="-C-")],
-    [sg.Button("Gamma Correction")],
-    [sg.Text("Gamma Value:"), sg.InputText(key="-GAMMA-")],
+    [sg.Button("Logarithmic Transformation"), sg.Text("Constant 'c':"), sg.InputText(key="-C-")],
+    [sg.Button("Gamma Correction"), sg.Text("Gamma Value:"), sg.InputText(key="-GAMMA-")],
     [sg.Button("Piecewise Linear Transformation")],
     [sg.Text("Segment 1 Start:"), sg.InputText(key="-SEGMENT1_START-")],
     [sg.Text("Segment 1 End:"), sg.InputText(key="-SEGMENT1_END-")],
@@ -51,8 +47,8 @@ filter_column = [
     [sg.Text("Segment 2 Start:"), sg.InputText(key="-SEGMENT2_START-")],
     [sg.Text("Segment 2 End:"), sg.InputText(key="-SEGMENT2_END-")],
     [sg.Text("Segment 2 Slope:"), sg.InputText(key="-SEGMENT2_SLOPE-")],
-    [sg.Text("Message to Hide:"), sg.InputText(key="-MESSAGE-")],
-    [sg.Button("Hide Message"),sg.Button("Reveal Message")],
+    [sg.Button("Hide Message"), sg.Button("Reveal Message"), sg.Text("Message to Hide:"), sg.InputText(key="-MESSAGE-")],
+    [sg.Button("Calculate Histogram"), sg.Button("Equalize Histogram")],
 ]
 
 # ----- Layout completo -----
@@ -66,7 +62,7 @@ layout = [
     ]
 ]
 
-window = sg.Window("Image Viewer", layout, size=(1200, 675))
+window = sg.Window("Image Viewer", layout)
 
 
 # Loop de eventos
@@ -205,7 +201,27 @@ while True:
         except Exception as e:
             sg.popup_error("Ocorreu um erro ao revelar a mensagem oculta:", str(e))
 
+    elif event == "Calculate Histogram":
+        try:
+            if "image" in locals():
+                calculate_histogram(image)
 
+        except Exception as e:
+            print("Ocorreu um erro ao calcular o histograma:", str(e))
 
+    elif event == "Equalize Histogram":
+        try:
+            if "image" in locals():
+                grayscale_image = image.convert('L')
+                equalized_image = PIL.ImageOps.equalize(grayscale_image)
+                
+                resized_equalized_image = resize_image(equalized_image, max_width=500, max_height=500)
+                equalized_image_data = convert_to_bytes(resized_equalized_image)
+                window['-IMAGE-'].update(data=equalized_image_data)
+                
+                calculate_histogram(equalized_image)
+
+        except Exception as e:
+            print("Ocorreu um erro ao equalizar o histograma:", str(e))
 
 window.close()

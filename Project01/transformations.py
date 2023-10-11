@@ -1,5 +1,7 @@
 import numpy as np
 import PIL.Image
+import matplotlib.pyplot as plt
+
 
 def apply_negative(image):
     # Converter a imagem para array numpy
@@ -152,3 +154,21 @@ def reveal_message(stego_image):
 
     return message
 
+
+
+def calculate_histogram(image):
+    grayscale_image = image.convert('L')
+    pixels = list(grayscale_image.getdata())
+    plt.figure()
+    plt.hist(pixels, bins=256)
+    plt.title('Histogram')
+    plt.xlabel('Pixel Value')
+    plt.ylabel('Frequency')
+    plt.tight_layout()
+    plt.show()
+
+# Função para equalizar o histograma de uma imagem
+def equalize_histogram(image):
+    grayscale_image = image.convert('L')
+    equalized_image = PIL.ImageOps.equalize(grayscale_image)
+    return equalized_image
