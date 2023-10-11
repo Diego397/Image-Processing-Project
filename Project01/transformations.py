@@ -227,3 +227,9 @@ def convolution(image_array, kernel):
             result[i, j] = np.sum(region * kernel)
 
     return result
+
+def apply_laplacian_filter(image):
+    kernel = np.array([[0, 1, 0],
+                   [1, -4, 1],
+                   [0, 1, 0]])
+    return apply_custom_filter(image, kernel)
