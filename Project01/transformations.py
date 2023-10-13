@@ -1,6 +1,7 @@
 import numpy as np
 import PIL.Image
 import matplotlib.pyplot as plt
+from utils import *
 
 def apply_negative(image):
     # Converter a imagem para array numpy
@@ -194,11 +195,7 @@ def apply_custom_filter(image, custom_filter):
     # Aplicar o filtro por convolução
     filtered_image_array = convolution(img_array, custom_filter)
 
-    if np.min(filtered_image_array) < 0:
-        filtered_image_array += abs(np.min(filtered_image_array))
-
-    # Normalizar os valores para o intervalo [0, 255]
-    filtered_image_array = (filtered_image_array / np.max(filtered_image_array)) * 255
+    filtered_image_array = normalize(filtered_image_array)
 
     # Converter de volta para uint8
     filtered_image_array = filtered_image_array.astype('uint8')
@@ -216,15 +213,9 @@ def apply_high_boost(image, custom_filter, factor):
     # Aplicar o filtro por convolução
     filtered_image_array = convolution(img_array, custom_filter)
 
-    if np.min(filtered_image_array) < 0:
-        filtered_image_array += abs(np.min(filtered_image_array))
-
-    # Normalizar os valores para o intervalo [0, 255]
-    filtered_image_array = (filtered_image_array / np.max(filtered_image_array)) * 255
-    
     filtered_image_array = (factor - 1) * img_array + filtered_image_array
 
-    filtered_image_array = (filtered_image_array / np.max(filtered_image_array)) * 255
+    filtered_image_array = normalize(filtered_image_array)
 
     # Converter de volta para uint8
     filtered_image_array = filtered_image_array.astype('uint8')
@@ -265,4 +256,55 @@ def high_boost(image, factor):
                    [1, -4, 1],
                    [0, 1, 0]])
     return apply_high_boost(image, kernel, factor)
+
+def apply_sobel(image, custom_filter):
+    grayscale_image = image.convert('L')
+    img_array = np.array(grayscale_image)
+    filtered_image_array = convolution(img_array, custom_filter)
+    return filtered_image_array
+
+def sobel_filter(image):
+    kernel_x = np.array([[-1, 0, 1],
+                   [-2, 0, 2],
+                   [-1, 0, 1]])
+    kernel_y = np.array([[-1, -2, -1],
+                   [0, 0, 0],
+                   [1, 2, 1]])
     
+    img_x_array = apply_sobel(image, kernel_x)
+    img_y_array = apply_sobel(image, kernel_y)
+    img_x_array = normalize(img_x_array)
+    img_y_array = normalize(img_y_array)
+
+    img_x = convert_to_image(img_x_array)
+    img_y = convert_to_image(img_y_array)
+    img_x = img_x.convert('L')
+    img_y = img_y.convert('L')
+
+    plt.figure(figsize=(10, 5))
+
+    plt.subplot(1, 2, 1)
+    plt.imshow(img_x)
+    plt.title('Derivada em X')
+
+    plt.subplot(1, 2, 2)
+    plt.imshow(img_y)
+    plt.title('Derivada em y')
+
+    plt.show()
+    return image
+
+def edge_detection(image):
+    kernel_x = np.array([[-1, 0, 1],
+                   [-2, 0, 2],
+                   [-1, 0, 1]])
+    kernel_y = np.array([[-1, -2, -1],
+                   [0, 0, 0],
+                   [1, 2, 1]])
+    
+    img_x_array = apply_sobel(image, kernel_x)
+    img_y_array = apply_sobel(image, kernel_y)
+
+    img_array = np.sqrt(img_x_array ** 2 + img_y_array ** 2)
+    img_array = normalize(img_array)
+    return convert_to_image(img_array)

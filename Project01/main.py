@@ -53,7 +53,8 @@ filter_column = [
     [sg.Text("Filter Size (odd number):"), sg.InputText(key="-FILTER_SIZE-")],
     [sg.Text("Custom Filter (comma-separated values):"), sg.InputText(key="-CUSTOM_FILTER-")],
     [sg.Button("Apply Custom Filter")],
-    [sg.Button("Laplacian Filter"), sg.Button("High Boost"), sg.InputText(key="-HIGH_BOOST_FACTOR-")]
+    [sg.Button("Laplacian Filter"), sg.Button("High Boost"), sg.InputText(key="-HIGH_BOOST_FACTOR-")],
+    [sg.Button("Sobel Filter"), sg.Button("Edge Detection")]
 ]
 
 # ----- Layout completo -----
@@ -260,6 +261,7 @@ while True:
 
         except Exception as e:
             print(e)
+
     elif event == "Laplacian Filter":
         try:
             if "image" in locals():
@@ -269,10 +271,11 @@ while True:
                 window['-IMAGE-'].update(data=image_data)
 
         except ValueError as e:
-            print("Erro ao aplicar o filtro customizado:", str(e))
+            print("Erro ao aplicar o filtro laplaciano:", str(e))
 
         except Exception as e:
-            print(e)        
+            print(e)
+
     elif event == "High Boost":
         try:
             if "image" in locals():
@@ -284,7 +287,35 @@ while True:
                 window['-IMAGE-'].update(data=image_data)
 
         except ValueError as e:
-            print("Erro ao aplicar o filtro customizado:", str(e))
+            print("Erro ao aplicar o high boost:", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Sobel Filter":
+        try:
+            if "image" in locals():
+                image = sobel_filter(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar o filtro de sobel:", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Edge Detection":
+        try:
+            if "image" in locals():
+                image = edge_detection(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao detectar as bordas", str(e))
 
         except Exception as e:
             print(e)
