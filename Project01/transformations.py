@@ -208,6 +208,32 @@ def apply_custom_filter(image, custom_filter):
 
     return filtered_image
 
+def apply_high_boost(image, custom_filter, factor):
+    # Converter a imagem para escala de cinza
+    grayscale_image = image.convert('L')
+    img_array = np.array(grayscale_image)
+
+    # Aplicar o filtro por convolução
+    filtered_image_array = convolution(img_array, custom_filter)
+
+    if np.min(filtered_image_array) < 0:
+        filtered_image_array += abs(np.min(filtered_image_array))
+
+    # Normalizar os valores para o intervalo [0, 255]
+    filtered_image_array = (filtered_image_array / np.max(filtered_image_array)) * 255
+    
+    filtered_image_array = (factor - 1) * img_array + filtered_image_array
+
+    filtered_image_array = (filtered_image_array / np.max(filtered_image_array)) * 255
+
+    # Converter de volta para uint8
+    filtered_image_array = filtered_image_array.astype('uint8')
+
+    # Criar uma nova imagem a partir do array transformado
+    filtered_image = PIL.Image.fromarray(filtered_image_array)
+
+    return filtered_image
+
 def convolution(image_array, kernel):
     height, width = image_array.shape
     k_height, k_width = kernel.shape
@@ -228,8 +254,15 @@ def convolution(image_array, kernel):
 
     return result
 
-def apply_laplacian_filter(image):
+def laplacian_filter(image):
     kernel = np.array([[0, 1, 0],
                    [1, -4, 1],
                    [0, 1, 0]])
     return apply_custom_filter(image, kernel)
+
+def high_boost(image, factor):
+    kernel = np.array([[0, 1, 0],
+                   [1, -4, 1],
+                   [0, 1, 0]])
+    return apply_high_boost(image, kernel, factor)
+    

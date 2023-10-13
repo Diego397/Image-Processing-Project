@@ -53,7 +53,7 @@ filter_column = [
     [sg.Text("Filter Size (odd number):"), sg.InputText(key="-FILTER_SIZE-")],
     [sg.Text("Custom Filter (comma-separated values):"), sg.InputText(key="-CUSTOM_FILTER-")],
     [sg.Button("Apply Custom Filter")],
-    [sg.Button("Laplacian Filter")]
+    [sg.Button("Laplacian Filter"), sg.Button("High Boost"), sg.InputText(key="-HIGH_BOOST_FACTOR-")]
 ]
 
 # ----- Layout completo -----
@@ -260,11 +260,25 @@ while True:
 
         except Exception as e:
             print(e)
-            
     elif event == "Laplacian Filter":
         try:
             if "image" in locals():
-                image = apply_laplacian_filter(image)
+                image = laplacian_filter(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar o filtro customizado:", str(e))
+
+        except Exception as e:
+            print(e)        
+    elif event == "High Boost":
+        try:
+            if "image" in locals():
+                factor = float(values["-HIGH_BOOST_FACTOR-"]) if values["-HIGH_BOOST_FACTOR-"] else 1
+
+                image = high_boost(image, factor)
                 resized_image = resize_image(image, max_width=500, max_height=500)
                 image_data = convert_to_bytes(resized_image)
                 window['-IMAGE-'].update(data=image_data)
