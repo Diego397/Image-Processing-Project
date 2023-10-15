@@ -308,3 +308,90 @@ def edge_detection(image):
     img_array = np.sqrt(img_x_array ** 2 + img_y_array ** 2)
     img_array = normalize(img_array)
     return convert_to_image(img_array)
+
+def fourier_transform(image):
+    grayscale_image = image.convert('L')
+    img_array = np.array(grayscale_image)
+
+    M, N = img_array.shape
+    DFT = np.zeros((M, N), dtype=complex)
+
+    for u in range(M):
+        for v in range(N):
+            for x in range(M):
+                for y in range(N):
+                    DFT[u, v] += img_array[x, y] * np.exp(-2j * np.pi * (u * x / M + v * y / N))
+
+    plt.imshow(np.abs(DFT), cmap='gray')
+    plt.title('DFT da imagem (parte real)')
+    plt.show()
+    #return convert_to_image(normalize(DFT))
+    return DFT
+
+def inverse_fourier_transform(DFT):
+    # grayscale_image = DFT.convert('L')
+    # DFT = np.array(grayscale_image)
+
+    M, N = DFT.shape
+    image = np.zeros((M, N), dtype=float)
+
+    for x in range(M):
+        for y in range(N):
+            for u in range(M):
+                for v in range(N):
+                    image[x, y] += DFT[u, v] * np.exp(2j * np.pi * (u * x / M + v * y / N)) / M * N
+
+    return convert_to_image(normalize(image))
+
+
+def apply_fft(image):
+    #grayscale_image = image.convert('L')
+    image = np.array(image)
+    
+    M, N = image.shape
+    if M == 1 and N == 1:
+        return image
+    else:
+        # Divide a imagem em quatro sub-imagens
+        A = image[::2, ::2]
+        B = image[::2, 1::2]
+        C = image[1::2, ::2]
+        D = image[1::2, 1::2]
+
+        # Calcula as FFTs das sub-imagens
+        A_hat = apply_fft(A)
+        B_hat = apply_fft(B)
+        C_hat = apply_fft(C)
+        D_hat = apply_fft(D)
+
+        # Combine as sub-imagens para obter a FFT da imagem completa
+        top = np.hstack((A_hat + np.exp(-2j * np.pi * np.arange(M // 2) / M) * D_hat, A_hat + np.exp(-2j * np.pi * np.arange(M // 2) / M) * D_hat))
+        bottom = np.hstack((B_hat + np.exp(-2j * np.pi * np.arange(M // 2) / M) * C_hat, B_hat - np.exp(-2j * np.pi * np.arange(M // 2) / M) * C_hat))
+        return np.vstack((top, bottom))
+
+# Calcule a FFT da imagem
+def fft2_imp(image):
+    fft_image = apply_fft(image)
+
+    # Calcule o espectro de magnitude (parte real) da FFT
+    magnitude_spectrum = np.abs(fft_image)
+
+    # Exiba o espectro de magnitude
+    plt.imshow(np.log1p(magnitude_spectrum), cmap='gray')
+    plt.title('Espectro de Magnitude da FFT')
+    plt.show()
+
+    return convert_to_image(normalize(np.log1p(magnitude_spectrum)))
+
+def fft2(image):
+    image = np.array(image)
+    fft_image = np.fft.fft2(image)
+
+    # Calcule o espectro de magnitude (parte real) da FFT
+    magnitude_spectrum = np.abs(fft_image)
+
+    # Exiba o espectro de magnitude
+    plt.imshow(np.log1p(magnitude_spectrum), cmap='gray')
+    plt.title('Espectro de Magnitude da FFT')
+    plt.show()
+    return convert_to_image(normalize(np.log1p(magnitude_spectrum)))

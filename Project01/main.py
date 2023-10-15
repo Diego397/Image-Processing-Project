@@ -54,7 +54,8 @@ filter_column = [
     [sg.Text("Custom Filter (comma-separated values):"), sg.InputText(key="-CUSTOM_FILTER-")],
     [sg.Button("Apply Custom Filter")],
     [sg.Button("Laplacian Filter"), sg.Button("High Boost"), sg.InputText(key="-HIGH_BOOST_FACTOR-")],
-    [sg.Button("Sobel Filter"), sg.Button("Edge Detection")]
+    [sg.Button("Sobel Filter"), sg.Button("Edge Detection")],
+    [sg.Button("Fourier Transform"), sg.Button("Inverse Fourier Transform"), sg.Button("Fast Fourier Transform"), sg.Button("NumPy Fast Fourier Transform")],
 ]
 
 # ----- Layout completo -----
@@ -316,6 +317,61 @@ while True:
 
         except ValueError as e:
             print("Erro ao detectar as bordas", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Fourier Transform":
+        try:
+            if "image" in locals():
+                image = fourier_transform(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada de fourier", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Inverse Fourier Transform":
+        try:
+            if "image" in locals():
+                image = inverse_fourier_transform(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada de fourier", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Fast Fourier Transform":
+        try:
+            if "image" in locals():
+                image = fft2_imp(image)
+                image_data = convert_to_bytes(image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada rápida de fourier", str(e))
+
+        except Exception as e:
+            print(e)
+
+    elif event == "NumPy Fast Fourier Transform":
+        try:
+            if "image" in locals():
+                image = fft2(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada rápida de fourier", str(e))
 
         except Exception as e:
             print(e)
