@@ -62,6 +62,10 @@ filter_column = [
     [sg.Button("Fourier Transform"), sg.Button("Inverse Fourier Transform"), sg.Button("Fast Fourier Transform"), sg.Button("NumPy Fast Fourier Transform")],
     [sg.Button("RGB to HSV"), sg.Button("HSV to RGB")],
     [sg.Button("Chroma Key"), sg.Input(key="-CHROMA_IMAGE-", visible=False), sg.FileBrowse("Select Chroma Image", key="-CHROMA_BROWSE-")],
+    [sg.Text('Fator de Escala:'), sg.Input(key='-SCALE-', size=(10, 1)), sg.Button('Escala (Vizinho mais próximo)')],
+    [sg.Text('Fator de Escala:'), sg.Input(key='-SCALE-LIN-', size=(10, 1)), sg.Button('Escala (Linear)')],
+    [sg.Text('Ângulo de Rotação:'), sg.Input(key='-ANGLE-', size=(10, 1)), sg.Button('Rotação (Vizinho mais próximo)')],
+    [sg.Text('Ângulo de Rotação:'), sg.Input(key='-ANGLE-LIN-', size=(10, 1)), sg.Button('Rotação (Linear)')],
 ]
 
 # ----- Layout completo -----
@@ -495,5 +499,64 @@ while True:
 
         except Exception as e:
             print("Ocorreu um erro ao aplicar o Chroma Key:", str(e))
+
+    elif event == "Escala (Vizinho mais próximo)":
+        try:
+            if "image" in locals():
+                # Obter o fator de escala inserido pelo usuário
+                scale_factor = float(values["-SCALE-"]) if values["-SCALE-"] else 1.0
+
+                # Aplicar a escala usando o vizinho mais próximo à imagem com o fator de escala
+                scaled_image = apply_scale_nearest(image, scale_factor)
+                resized_image = resize_image(scaled_image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError:
+            print("Por favor, insira um valor numérico válido para o fator de escala.")
+
+        except Exception as e:
+            print(e)
+
+    elif event == 'Escala (Linear)':
+        try:
+            scale_factor_linear = float(values['-SCALE-LIN-'])
+            if scale_factor_linear <= 0:
+                raise ValueError("O fator de escala deve ser maior que zero.")
+            
+            if "image" in locals():
+                # Aplicar a escala com interpolação linear à imagem
+                image = apply_scale_linear(image, scale_factor_linear)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar a escala com interpolação linear:", str(e))
+
+        except Exception as e:
+            print(e)
+
+    elif event == 'Rotação (Vizinho mais próximo)':
+        try:
+            if 'image' in locals():
+                angle = float(values['-ANGLE-']) if values['-ANGLE-'] else 0
+                rotated_image = rotate_nearest_neighbor(image, angle)
+                resized_rotated_image = resize_image(rotated_image, max_width=500, max_height=500)
+                rotated_image_data = convert_to_bytes(resized_rotated_image)
+                window['-IMAGE-'].update(data=rotated_image_data)
+        except ValueError:
+            print('Por favor, insira um ângulo numérico válido.')
+
+    elif event == 'Rotação (Linear)':
+        try:
+            if 'image' in locals():
+                angle = float(values['-ANGLE-LIN-']) if values['-ANGLE-LIN-'] else 0
+                rotated_image = rotate_linear(image, angle)
+                resized_rotated_image = resize_image(rotated_image, max_width=500, max_height=500)
+                rotated_image_data = convert_to_bytes(resized_rotated_image)
+                window['-IMAGE-'].update(data=rotated_image_data)
+        except ValueError:
+            print('Por favor, insira um ângulo numérico válido.')
 
 window.close()

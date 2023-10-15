@@ -735,17 +735,6 @@ def apply_chroma_key_to_image(image_path, chroma_image_path):
         print("Ocorreu um erro ao aplicar o Chroma Key:", str(e))
 
 def apply_chroma_key(original_image, chroma_image, green_threshold=100):
-    """
-    Apply Chroma Key to the original image using the provided chroma image.
-    
-    Parameters:
-        original_image (PIL.Image.Image): The original image.
-        chroma_image (PIL.Image.Image): The chroma image to be used for Chroma Key.
-        green_threshold (int): The green channel threshold for identifying the chroma color.
-    
-    Returns:
-        PIL.Image.Image: The image after applying Chroma Key.
-    """
     # Convert the chroma image to RGB
     chroma_image_rgb = chroma_image.convert("RGB")
     chroma_image_array = np.array(chroma_image_rgb)
@@ -768,3 +757,206 @@ def apply_chroma_key(original_image, chroma_image, green_threshold=100):
     chroma_keyed_image = PIL.Image.fromarray(original_image_array, 'RGB')
 
     return chroma_keyed_image
+
+
+def apply_scale_nearest(image, scale_factor):
+    img_array = np.array(image)
+
+    # Calcula a nova largura e altura com base no fator de escala
+    new_height = int(img_array.shape[0] * scale_factor)
+    new_width = int(img_array.shape[1] * scale_factor)
+
+    if img_array.shape[2] == 4:  # RGBA image
+        resized_array = np.zeros((new_height, new_width, 4), dtype=np.uint8)
+    elif len(img_array.shape) == 3:  # RGB image
+        resized_array = np.zeros((new_height, new_width, 3), dtype=np.uint8)
+    else:  # Grayscale image
+        resized_array = np.zeros((new_height, new_width), dtype=np.uint8)
+
+    height_ratio = img_array.shape[0] / new_height
+    width_ratio = img_array.shape[1] / new_width
+
+    for i in range(new_height):
+        for j in range(new_width):
+            nearest_i = int(i * height_ratio)
+            nearest_j = int(j * width_ratio)
+            if img_array.shape[2] == 4:
+                resized_array[i][j] = img_array[nearest_i][nearest_j]
+            elif len(img_array.shape) == 3:
+                resized_array[i][j] = img_array[nearest_i][nearest_j]
+            else:
+                resized_array[i][j] = img_array[nearest_i][nearest_j]
+
+    if img_array.shape[2] == 4:
+        return PIL.Image.fromarray(resized_array, 'RGBA')
+    elif len(img_array.shape) == 3:
+        return PIL.Image.fromarray(resized_array, 'RGB')
+    else:
+        return PIL.Image.fromarray(resized_array, 'L')
+
+def apply_scale_nearest(image, scale_factor):
+    img_array = np.array(image)
+
+    # Calcula a nova largura e altura com base no fator de escala
+    new_height = int(img_array.shape[0] * scale_factor)
+    new_width = int(img_array.shape[1] * scale_factor)
+
+    if img_array.shape[2] == 4:  # RGBA image
+        resized_array = np.zeros((new_height, new_width, 4), dtype=np.uint8)
+    elif len(img_array.shape) == 3:  # RGB image
+        resized_array = np.zeros((new_height, new_width, 3), dtype=np.uint8)
+    else:  # Grayscale image
+        resized_array = np.zeros((new_height, new_width), dtype=np.uint8)
+
+    height_ratio = img_array.shape[0] / new_height
+    width_ratio = img_array.shape[1] / new_width
+
+    for i in range(new_height):
+        for j in range(new_width):
+            nearest_i = int(i * height_ratio)
+            nearest_j = int(j * width_ratio)
+            if img_array.shape[2] == 4:
+                resized_array[i][j] = img_array[nearest_i][nearest_j]
+            elif len(img_array.shape) == 3:
+                resized_array[i][j] = img_array[nearest_i][nearest_j]
+            else:
+                resized_array[i][j] = img_array[nearest_i][nearest_j]
+
+    if img_array.shape[2] == 4:
+        return PIL.Image.fromarray(resized_array, 'RGBA')
+    elif len(img_array.shape) == 3:
+        return PIL.Image.fromarray(resized_array, 'RGB')
+    else:
+        return PIL.Image.fromarray(resized_array, 'L')
+
+
+def apply_scale_linear(image, scale_factor): # Contem Bugs
+    img_array = np.array(image)
+
+    # Calcula a nova largura e altura com base no fator de escala
+    new_height = int(img_array.shape[0] * scale_factor)
+    new_width = int(img_array.shape[1] * scale_factor)
+
+    if img_array.shape[2] == 4:  # RGBA image
+        resized_array = np.zeros((new_height, new_width, 4), dtype=np.uint8)
+    elif len(img_array.shape) == 3:  # RGB image
+        resized_array = np.zeros((new_height, new_width, 3), dtype=np.uint8)
+    else:  # Grayscale image
+        resized_array = np.zeros((new_height, new_width), dtype=np.uint8)
+
+    for i in range(new_height):
+        for j in range(new_width):
+            # Coordenadas originais na imagem
+            y_original = i / new_height * (img_array.shape[0] - 1)
+            x_original = j / new_width * (img_array.shape[1] - 1)
+
+            # Coordenadas dos quatro pontos vizinhos
+            y1, y2 = int(np.floor(y_original)), int(np.ceil(y_original))
+            x1, x2 = int(np.floor(x_original)), int(np.ceil(x_original))
+
+            # Peso dos quatro pontos vizinhos
+            weight_y1 = y2 - y_original
+            weight_y2 = y_original - y1
+            weight_x1 = x2 - x_original
+            weight_x2 = x_original - x1
+
+            # Realiza a interpolação linear para cada canal de cor
+            for channel in range(img_array.shape[2]):
+                interpolated_value = (
+                    img_array[y1, x1, channel] * weight_y1 * weight_x1 +
+                    img_array[y1, x2, channel] * weight_y1 * weight_x2 +
+                    img_array[y2, x1, channel] * weight_y2 * weight_x1 +
+                    img_array[y2, x2, channel] * weight_y2 * weight_x2
+                )
+                resized_array[i][j][channel] = int(interpolated_value)
+
+    if img_array.shape[2] == 4:
+        return PIL.Image.fromarray(resized_array, 'RGBA')
+    elif len(img_array.shape) == 3:
+        return PIL.Image.fromarray(resized_array, 'RGB')
+    else:
+        return PIL.Image.fromarray(resized_array, 'L')
+
+def rotate_nearest_neighbor(image, angle_deg):
+    img_array = np.array(image)
+
+    # Convertendo o ângulo de graus para radianos
+    angle_rad = np.radians(angle_deg)
+
+    # Calcula a matriz de rotação
+    rotation_matrix = np.array([
+        [np.cos(angle_rad), -np.sin(angle_rad)],
+        [np.sin(angle_rad), np.cos(angle_rad)]
+    ])
+
+    # Calcula a nova largura e altura da imagem após a rotação
+    new_width = int(abs(img_array.shape[1] * np.cos(angle_rad)) + abs(img_array.shape[0] * np.sin(angle_rad)))
+    new_height = int(abs(img_array.shape[1] * np.sin(angle_rad)) + abs(img_array.shape[0] * np.cos(angle_rad)))
+
+    rotated_array = np.zeros((new_height, new_width, img_array.shape[2]), dtype=np.uint8)
+
+    # Coordenadas do ponto de rotação (centro da imagem)
+    center_x, center_y = img_array.shape[1] / 2, img_array.shape[0] / 2
+
+    for i in range(new_height):
+        for j in range(new_width):
+            # Coordenadas originais na imagem
+            x_original = rotation_matrix[0, 0] * (j - center_x) + rotation_matrix[0, 1] * (i - center_y) + center_x
+            y_original = rotation_matrix[1, 0] * (j - center_x) + rotation_matrix[1, 1] * (i - center_y) + center_y
+
+            # Coordenadas do ponto vizinho mais próximo
+            nearest_i, nearest_j = int(round(y_original)), int(round(x_original))
+
+            if nearest_i >= 0 and nearest_i < img_array.shape[0] and nearest_j >= 0 and nearest_j < img_array.shape[1]:
+                rotated_array[i][j] = img_array[nearest_i][nearest_j]
+
+    return PIL.Image.fromarray(rotated_array, image.mode)
+
+def rotate_linear(image, angle_deg): # Contem Bugs
+    img_array = np.array(image)
+
+    # Convertendo o ângulo de graus para radianos
+    angle_rad = np.radians(angle_deg)
+
+    # Calcula a matriz de rotação
+    rotation_matrix = np.array([
+        [np.cos(angle_rad), -np.sin(angle_rad)],
+        [np.sin(angle_rad), np.cos(angle_rad)]
+    ])
+
+    # Calcula a nova largura e altura da imagem após a rotação
+    new_width = int(abs(img_array.shape[1] * np.cos(angle_rad)) + abs(img_array.shape[0] * np.sin(angle_rad)))
+    new_height = int(abs(img_array.shape[1] * np.sin(angle_rad)) + abs(img_array.shape[0] * np.cos(angle_rad)))
+
+    rotated_array = np.zeros((new_height, new_width, img_array.shape[2]), dtype=np.uint8)
+
+    # Coordenadas do ponto de rotação (centro da imagem)
+    center_x, center_y = img_array.shape[1] / 2, img_array.shape[0] / 2
+
+    for i in range(new_height):
+        for j in range(new_width):
+            # Coordenadas originais na imagem
+            x_original = rotation_matrix[0, 0] * (j - center_x) + rotation_matrix[0, 1] * (i - center_y) + center_x
+            y_original = rotation_matrix[1, 0] * (j - center_x) + rotation_matrix[1, 1] * (i - center_y) + center_y
+
+            # Coordenadas dos quatro pontos vizinhos mais próximos
+            y1, y2 = int(np.floor(y_original)), int(np.ceil(y_original))
+            x1, x2 = int(np.floor(x_original)), int(np.ceil(x_original))
+
+            # Peso dos quatro pontos vizinhos
+            weight_y1 = y2 - y_original
+            weight_y2 = y_original - y1
+            weight_x1 = x2 - x_original
+            weight_x2 = x_original - x1
+
+            # Realiza a interpolação linear para cada canal de cor
+            for channel in range(img_array.shape[2]):
+                interpolated_value = (
+                    img_array[y1, x1, channel] * weight_y1 * weight_x1 +
+                    img_array[y1, x2, channel] * weight_y1 * weight_x2 +
+                    img_array[y2, x1, channel] * weight_y2 * weight_x1 +
+                    img_array[y2, x2, channel] * weight_y2 * weight_x2
+                )
+                rotated_array[i][j][channel] = int(interpolated_value)
+
+    return PIL.Image.fromarray(rotated_array, image.mode)
