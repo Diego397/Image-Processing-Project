@@ -3,6 +3,7 @@ import os.path
 import io
 import PIL.Image
 from fractions import Fraction
+import colorsys
 from transformations import *
 
 def convert_to_bytes(image, format="PNG"):
@@ -55,7 +56,12 @@ filter_column = [
     [sg.Button("Apply Custom Weighted Mean Smoothing Filter"), sg.Text("Custom Kernel (comma-separated values):"), sg.InputText(key="-CUSTOM_KERNEL-")],
     [sg.Text("Filter Size (odd number):"), sg.InputText(key="-FILTER_SIZE-")],
     [sg.Text("Custom Filter (comma-separated values):"), sg.InputText(key="-CUSTOM_FILTER-")],
-    [sg.Button("Apply Custom Filter")]
+    [sg.Button("Apply Custom Filter")],
+    [sg.Button("Laplacian Filter"), sg.Button("High Boost"), sg.InputText(key="-HIGH_BOOST_FACTOR-")],
+    [sg.Button("Sobel Filter"), sg.Button("Edge Detection")],
+    [sg.Button("Fourier Transform"), sg.Button("Inverse Fourier Transform"), sg.Button("Fast Fourier Transform"), sg.Button("NumPy Fast Fourier Transform")],
+    [sg.Button("RGB to HSV"), sg.Button("HSV to RGB")],
+    [sg.Button("Chroma Key"), sg.Input(key="-CHROMA_IMAGE-", visible=False), sg.FileBrowse("Select Chroma Image", key="-CHROMA_BROWSE-")],
 ]
 
 # ----- Layout completo -----
@@ -77,7 +83,7 @@ while True:
     event, values = window.read()
     if event == "Exit" or event == sg.WIN_CLOSED:
         break
-    if event == "-FOLDER-":
+    elif event == "-FOLDER-":
         folder = values["-FOLDER-"]
         try:
             file_list = os.listdir(folder)
@@ -210,22 +216,26 @@ while True:
     elif event == "Exibir histograma":
         try:
             if "image" in locals():
-                plot_histogram(image)
-
+                if image.mode == 'L':
+                    plot_histogram(image)
+                else:
+                    plot_color_histogram(image)
         except Exception as e:
             print("Ocorreu um erro ao calcular o histograma:", str(e))
 
     elif event == "Equalizar Histograma":
         try:
             if "image" in locals():
-                grayscale_image = image.convert('L')
-                equalized_image = equalize_histogram(grayscale_image)
-                
+                equalized_image = equalize_histogram(image)
+
                 resized_equalized_image = resize_image(equalized_image, max_width=500, max_height=500)
                 equalized_image_data = convert_to_bytes(resized_equalized_image)
                 window['-IMAGE-'].update(data=equalized_image_data)
-                
-                plot_histogram(equalized_image)
+
+                if equalized_image.mode == 'L':
+                    plot_histogram(equalized_image)
+                elif equalized_image.mode == 'RGB' or equalized_image.mode == 'RGBA':
+                    plot_color_histogram(equalized_image)
 
         except Exception as e:
             print("Ocorreu um erro ao equalizar o histograma:", str(e))
@@ -319,5 +329,171 @@ while True:
 
         except Exception as e:
             print(e)
+
+    elif event == "Laplacian Filter":
+        try:
+            if "image" in locals():
+                image = laplacian_filter(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar o filtro laplaciano:", str(e))
+
+        except Exception as e:
+            print(e)
+
+    elif event == "High Boost":
+        try:
+            if "image" in locals():
+                factor = float(values["-HIGH_BOOST_FACTOR-"]) if values["-HIGH_BOOST_FACTOR-"] else 1
+
+                image = high_boost(image, factor)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar o high boost:", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Sobel Filter":
+        try:
+            if "image" in locals():
+                image = sobel_filter(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar o filtro de sobel:", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Edge Detection":
+        try:
+            if "image" in locals():
+                image = edge_detection(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao detectar as bordas", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Fourier Transform":
+        try:
+            if "image" in locals():
+                image = fourier_transform(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada de fourier", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Inverse Fourier Transform":
+        try:
+            if "image" in locals():
+                image = inverse_fourier_transform(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada de fourier", str(e))
+
+        except Exception as e:
+            print(e)
+    
+    elif event == "Fast Fourier Transform":
+        try:
+            if "image" in locals():
+                image = fft2_imp(image)
+                image_data = convert_to_bytes(image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada rápida de fourier", str(e))
+
+        except Exception as e:
+            print(e)
+
+    elif event == "NumPy Fast Fourier Transform":
+        try:
+            if "image" in locals():
+                image = fft2(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao fazer a transformada rápida de fourier", str(e))
+
+        except Exception as e:
+            print(e)
+
+    elif event == "RGB to HSV":
+        try:
+            if "image" in locals():
+                # Converter a imagem de RGB para HSV
+                hsv_image = rgb_to_hsv(image)
+
+                # Para exibição na interface, mantenha a imagem no formato RGB
+                rgb_image = hsv_to_rgb(hsv_image)
+
+                resized_rgb_image = resize_image(rgb_image, max_width=500, max_height=500)
+                rgb_image_data = convert_to_bytes(resized_rgb_image)
+                window["-IMAGE-"].update(data=rgb_image_data)
+
+        except Exception as e:
+            print("Ocorreu um erro ao converter RGB para HSV:", str(e))
+
+    elif event == "HSV to RGB":
+        try:
+            if "image" in locals():
+                # Converter a imagem de HSV para RGB
+                rgb_image = hsv_to_rgb(image)
+                resized_rgb_image = resize_image(rgb_image, max_width=500, max_height=500)
+                rgb_image_data = convert_to_bytes(resized_rgb_image)
+                window["-IMAGE-"].update(data=rgb_image_data)
+
+        except Exception as e:
+            print("Ocorreu um erro ao converter HSV para RGB:", str(e))
+
+    elif event == "Chroma Key":
+        try:
+            # Obter o caminho da imagem selecionada na lista
+            selected_image_path = os.path.join(values["-FOLDER-"], values["-FILE LIST-"][0])
+            # Obter o caminho da imagem de chroma selecionada
+            selected_chroma_image_path = values["-CHROMA_IMAGE-"]
+
+            # Verificar se os caminhos das imagens são válidos
+            if selected_image_path and os.path.isfile(selected_image_path) and selected_chroma_image_path and os.path.isfile(selected_chroma_image_path):
+                # Carregar a imagem original
+                original_image = PIL.Image.open(selected_image_path)
+                # Carregar a imagem de chroma
+                chroma_image = PIL.Image.open(selected_chroma_image_path)
+
+                # Aplicar o Chroma Key
+                chroma_keyed_image = apply_chroma_key(original_image, chroma_image)
+
+                # Atualizar a imagem exibida com a imagem após o Chroma Key
+                resized_chroma_keyed_image = resize_image(chroma_keyed_image, max_width=500, max_height=500)
+                chroma_keyed_image_data = convert_to_bytes(resized_chroma_keyed_image)
+                window['-IMAGE-'].update(data=chroma_keyed_image_data)
+
+        except Exception as e:
+            print("Ocorreu um erro ao aplicar o Chroma Key:", str(e))
 
 window.close()
