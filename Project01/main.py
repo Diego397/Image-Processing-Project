@@ -38,18 +38,21 @@ image_viewer_column = [
 ]
 
 filter_column = [
-    [sg.Button("Negative")],
-    [sg.Button("Logarithmic Transformation"), sg.Text("Constant 'c':"), sg.InputText(key="-C-")],
-    [sg.Button("Gamma Correction"), sg.Text("Gamma Value:"), sg.InputText(key="-GAMMA-")],
-    [sg.Button("Piecewise Linear Transformation")],
-    [sg.Text("Segment 1 Start:"), sg.InputText(key="-SEGMENT1_START-")],
-    [sg.Text("Segment 1 End:"), sg.InputText(key="-SEGMENT1_END-")],
-    [sg.Text("Segment 1 Slope:"), sg.InputText(key="-SEGMENT1_SLOPE-")],
-    [sg.Text("Segment 2 Start:"), sg.InputText(key="-SEGMENT2_START-")],
-    [sg.Text("Segment 2 End:"), sg.InputText(key="-SEGMENT2_END-")],
-    [sg.Text("Segment 2 Slope:"), sg.InputText(key="-SEGMENT2_SLOPE-")],
-    [sg.Button("Hide Message"), sg.Button("Reveal Message"), sg.Text("Message to Hide:"), sg.InputText(key="-MESSAGE-")],
-    [sg.Button("Calculate Histogram"), sg.Button("Equalize Histogram")],
+    [sg.Button("Negativo")],
+    [sg.Button("Transformação Logarítmica"), sg.Text("Constante 'c':"), sg.InputText(key="-C-")],
+    [sg.Button("Potência"), sg.Text("Valor de Gama:"), sg.InputText(key="-GAMMA-")],
+    [sg.Button("Transformação Linear definida por partes")],
+    [sg.Text("Segmento 1 Inicio:"), sg.InputText(key="-SEGMENT1_START-")],
+    [sg.Text("Segmento 1 Fim:"), sg.InputText(key="-SEGMENT1_END-")],
+    [sg.Text("Segmento 1 Inclinação:"), sg.InputText(key="-SEGMENT1_SLOPE-")],
+    [sg.Text("Segmento 2 Inicio:"), sg.InputText(key="-SEGMENT2_START-")],
+    [sg.Text("Segmento 2 Fim:"), sg.InputText(key="-SEGMENT2_END-")],
+    [sg.Text("Segmento 2 Inclinação:"), sg.InputText(key="-SEGMENT2_SLOPE-")],
+    [sg.Button("Esconder Mensagem"), sg.Button("Revelar Mensagem"), sg.Text("Menssagem:"), sg.InputText(key="-MESSAGE-")],
+    [sg.Button("Exibir histograma"), sg.Button("Equalizar Histograma")],
+    [sg.Button("Binarizar"), sg.Text("Valor de Threshold:"), sg.InputText(key="-THRESHOLD-")],
+    [sg.Button("Apply Mean Smoothing Filter")],
+    [sg.Button("Apply Custom Weighted Mean Smoothing Filter"), sg.Text("Custom Kernel (comma-separated values):"), sg.InputText(key="-CUSTOM_KERNEL-")],
     [sg.Text("Filter Size (odd number):"), sg.InputText(key="-FILTER_SIZE-")],
     [sg.Text("Custom Filter (comma-separated values):"), sg.InputText(key="-CUSTOM_FILTER-")],
     [sg.Button("Apply Custom Filter")]
@@ -101,7 +104,7 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == "Negative":
+    elif event == "Negativo":
         try:
             if "image" in locals():
                 # Aplicar o negativo à imagem
@@ -113,7 +116,7 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == "Logarithmic Transformation":
+    elif event == "Transformação Logarítmica":
         try:
             if "image" in locals():
                 # Obter o valor de 'c' inserido pelo usuário
@@ -131,7 +134,7 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == "Gamma Correction":
+    elif event == "Potência":
         try:
             if "image" in locals():
                 # Obter o valor do gama inserido pelo usuário
@@ -149,7 +152,7 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == "Piecewise Linear Transformation":
+    elif event == "Transformação Linear definida por partes":
         try:
             if "image" in locals():
                 # Obter os valores inseridos pelo usuário para os segmentos
@@ -177,7 +180,7 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == "Hide Message":
+    elif event == "Esconder Mensagem":
         try:
             if "image" in locals():
                 # Obter a mensagem inserida pelo usuário
@@ -194,18 +197,17 @@ while True:
         except Exception as e:
             print("Ocorreu um erro ao aplicar a transformação esteganográfica:", str(e))
 
-    elif event == "Reveal Message":
+    elif event == "Revelar Mensagem":
         try:
             if "stego_image" in locals():
                 # Revelar a mensagem oculta na imagem esteganográfica
                 revealed_message = reveal_message(stego_image)
-                print(revealed_message)
                 sg.popup("Mensagem oculta:", revealed_message)
 
         except Exception as e:
             sg.popup_error("Ocorreu um erro ao revelar a mensagem oculta:", str(e))
 
-    elif event == "Calculate Histogram":
+    elif event == "Exibir histograma":
         try:
             if "image" in locals():
                 plot_histogram(image)
@@ -213,7 +215,7 @@ while True:
         except Exception as e:
             print("Ocorreu um erro ao calcular o histograma:", str(e))
 
-    elif event == "Equalize Histogram":
+    elif event == "Equalizar Histograma":
         try:
             if "image" in locals():
                 grayscale_image = image.convert('L')
@@ -228,7 +230,7 @@ while True:
         except Exception as e:
             print("Ocorreu um erro ao equalizar o histograma:", str(e))
 
-    if event == "Apply Custom Filter":
+    elif event == "Apply Custom Filter":
         try:
             if "image" in locals():
                 # Obter o tamanho do filtro inserido pelo usuário
@@ -250,6 +252,64 @@ while True:
 
                 # Aplicar o filtro customizado à imagem
                 image = apply_custom_filter(image, custom_filter)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except ValueError as e:
+            print("Erro ao aplicar o filtro customizado:", str(e))
+
+        except Exception as e:
+            print(e)
+
+    elif event == "Binarizar":
+        try:
+            if "image" in locals():
+                # Obter o valor do limiar inserido pelo usuário
+                threshold_value = int(values["-THRESHOLD-"]) if values["-THRESHOLD-"] else 128
+
+                # Aplicar a binarização à imagem com o valor do limiar
+                binarized_image = apply_binarization(image, threshold_value)
+                resized_binarized_image = resize_image(binarized_image, max_width=500, max_height=500)
+                binarized_image_data = convert_to_bytes(resized_binarized_image)
+                window['-IMAGE-'].update(data=binarized_image_data)
+
+        except ValueError:
+            print("Por favor, insira um valor numérico inteiro válido para o limiar.")
+
+        except Exception as e:
+            print(e)
+
+    elif event == "Apply Mean Smoothing Filter":
+        try:
+            if "image" in locals():
+                # Aplicar suavização da média à imagem
+                image = apply_mean_smoothing(image)
+                resized_image = resize_image(image, max_width=500, max_height=500)
+                image_data = convert_to_bytes(resized_image)
+                window['-IMAGE-'].update(data=image_data)
+
+        except Exception as e:
+            print("Ocorreu um erro ao aplicar a suavização da média:", str(e))
+
+    elif event == "Apply Custom Weighted Mean Smoothing Filter":
+        try:
+            if "image" in locals():
+                # Obter o kernel inserido pelo usuário
+                custom_kernel_values = values["-CUSTOM_KERNEL-"]
+                custom_kernel_values = custom_kernel_values.split(',')
+                custom_kernel_values = [float(val.strip()) for val in custom_kernel_values if val.strip()]
+
+                # Verificar se o tamanho do kernel é válido (deve ser quadrado e ímpar)
+                kernel_size = int(np.sqrt(len(custom_kernel_values)))
+                if kernel_size * kernel_size != len(custom_kernel_values) or kernel_size % 2 == 0:
+                    raise ValueError("O tamanho do kernel não é válido. Deve ser um kernel quadrado e ímpar.")
+
+                # Reshape para o tamanho do kernel
+                custom_kernel = np.array(custom_kernel_values).reshape(kernel_size, kernel_size)
+
+                # Aplicar o filtro customizado à imagem
+                image = apply_weighted_mean_smoothing(image, custom_kernel)
                 resized_image = resize_image(image, max_width=500, max_height=500)
                 image_data = convert_to_bytes(resized_image)
                 window['-IMAGE-'].update(data=image_data)

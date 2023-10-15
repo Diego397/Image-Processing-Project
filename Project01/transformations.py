@@ -5,16 +5,25 @@ import matplotlib.pyplot as plt
 def apply_negative(image):
     # Converter a imagem para array numpy
     img_array = np.array(image)
-
-    # print(img_array)
-        
-    # Inverter os valores dos canais RGB
-    inverted_img_array = 255 - img_array
-
-    # print(inverted_img_array)
     
-    # Criar uma nova imagem a partir do array invertido
-    negative_image = PIL.Image.fromarray(inverted_img_array.astype('uint8'))
+    if len(img_array.shape) == 3:
+
+        # Separar os canais de cor RGB
+        red_channel = img_array[:, :, 0]
+        green_channel = img_array[:, :, 1]
+        blue_channel = img_array[:, :, 2]
+
+        # Inverter os valores de cada canal RGB
+        negative_red_channel = 255 - red_channel
+        negative_green_channel = 255 - green_channel
+        negative_blue_channel = 255 - blue_channel
+
+        # Criar uma nova imagem a partir dos arrays modificados
+        negative_img_array = np.stack((negative_red_channel, negative_green_channel, negative_blue_channel), axis=-1)
+    else:
+        negative_img_array = 255 - img_array
+
+    negative_image = PIL.Image.fromarray(negative_img_array.astype('uint8'))
 
     return negative_image
 
@@ -22,17 +31,42 @@ def apply_logarithmic_transformation(image, c):
     # Converter a imagem para array numpy
     img_array = np.array(image)
 
-    # Aplicar a transformação logarítmica
-    log_transformed = c * np.log(1 + img_array)
+    if len(img_array.shape) == 3 and img_array.shape[2] == 3:  # Imagem colorida (RGB)
+        # Separar os canais de cor RGB
+        red_channel = img_array[:, :, 0]
+        green_channel = img_array[:, :, 1]
+        blue_channel = img_array[:, :, 2]
 
-    # Normalizar os valores para o intervalo [0, 255]
-    log_transformed = (log_transformed / np.max(log_transformed)) * 255
+        # Aplicar a transformação logarítmica em cada canal
+        log_transformed_red = c * np.log1p(red_channel)  # Usamos log1p para evitar log(0)
+        log_transformed_green = c * np.log1p(green_channel)
+        log_transformed_blue = c * np.log1p(blue_channel)
 
-    # Converter de volta para uint8
-    log_transformed = log_transformed.astype('uint8')
+        # Normalizar os valores para o intervalo [0, 255] para cada canal
+        log_transformed_red = (log_transformed_red / np.max(log_transformed_red)) * 255
+        log_transformed_green = (log_transformed_green / np.max(log_transformed_green)) * 255
+        log_transformed_blue = (log_transformed_blue / np.max(log_transformed_blue)) * 255
+
+        # Empilhar os canais transformados de volta em uma imagem RGB
+        transformed_img_array = np.stack((log_transformed_red, log_transformed_green, log_transformed_blue), axis=-1)
+    else:  # Imagem em escala de cinza
+        # Aplicar a transformação logarítmica
+        log_transformed = c * np.log1p(img_array)  # Usamos log1p para evitar log(0)
+
+        # Normalizar os valores para o intervalo [0, 255]
+        log_transformed = (log_transformed / np.max(log_transformed)) * 255
+
+        # Usar a transformação logarítmica em escala de cinza diretamente
+        transformed_img_array = log_transformed
+
+    # Lidar com valores infinitos ou NaN, substituindo-os por 0
+    transformed_img_array = np.nan_to_num(transformed_img_array)
+
+    # Garantir que os valores estejam no intervalo [0, 255]
+    transformed_img_array = np.clip(transformed_img_array, 0, 255)
 
     # Criar uma nova imagem a partir do array transformado
-    transformed_image = PIL.Image.fromarray(log_transformed)
+    transformed_image = PIL.Image.fromarray(transformed_img_array.astype('uint8'))
 
     return transformed_image
 
@@ -40,38 +74,84 @@ def apply_gamma_correction(image, gamma):
     # Converter a imagem para array numpy
     img_array = np.array(image)
 
-    # Aplicar a correção gama
-    gamma_corrected = np.power(img_array / 255.0, gamma) * 255.0
+    if len(img_array.shape) == 3:  # Imagem colorida (RGB)
+        # Separar os canais de cor RGB
+        red_channel = img_array[:, :, 0]
+        green_channel = img_array[:, :, 1]
+        blue_channel = img_array[:, :, 2]
 
-    # Converter de volta para uint8
-    gamma_corrected = gamma_corrected.astype('uint8')
+        # Aplicar a correção gama em cada canal
+        gamma_corrected_red = np.power(red_channel / 255.0, gamma) * 255.0
+        gamma_corrected_green = np.power(green_channel / 255.0, gamma) * 255.0
+        gamma_corrected_blue = np.power(blue_channel / 255.0, gamma) * 255.0
 
-    # Criar uma nova imagem a partir do array transformado
-    corrected_image = PIL.Image.fromarray(gamma_corrected)
+        # Garantir que os valores estejam no intervalo [0, 255] para cada canal
+        gamma_corrected_red = np.clip(gamma_corrected_red, 0, 255)
+        gamma_corrected_green = np.clip(gamma_corrected_green, 0, 255)
+        gamma_corrected_blue = np.clip(gamma_corrected_blue, 0, 255)
 
-    return corrected_image
+        # Empilhar os canais corrigidos de volta em uma imagem RGB
+        gamma_corrected_img_array = np.stack((gamma_corrected_red, gamma_corrected_green, gamma_corrected_blue), axis=-1)
+    else:  # Imagem em escala de cinza
+        # Aplicar a correção gama
+        gamma_corrected_img_array = np.power(img_array / 255.0, gamma) * 255.0
+
+        # Garantir que os valores estejam no intervalo [0, 255]
+        gamma_corrected_img_array = np.clip(gamma_corrected_img_array, 0, 255)
+
+    # Criar uma nova imagem a partir do array corrigido
+    gamma_corrected_image = PIL.Image.fromarray(gamma_corrected_img_array.astype('uint8'))
+
+    return gamma_corrected_image
 
 def apply_piecewise_linear_transformation(image, segments):
     # Converter a imagem para array numpy
     img_array = np.array(image)
 
-    # Inicializar uma matriz para armazenar a imagem transformada
-    transformed_img_array = np.zeros_like(img_array)
+    if len(img_array.shape) == 3:  # Imagem colorida (RGB)
+        # Separar os canais de cor RGB
+        red_channel = img_array[:, :, 0]
+        green_channel = img_array[:, :, 1]
+        blue_channel = img_array[:, :, 2]
 
-    # Aplicar a transformação linear definida por partes
-    for i, segment in enumerate(segments):
-        start, end, slope = segment
-        mask = (img_array >= start) & (img_array <= end)
-        transformed_img_array[mask] = slope * (img_array[mask] - start)
+        # Inicializar matrizes para armazenar os canais transformados
+        transformed_red = np.zeros_like(red_channel)
+        transformed_green = np.zeros_like(green_channel)
+        transformed_blue = np.zeros_like(blue_channel)
 
-    # Normalizar os valores para o intervalo [0, 255]
-    transformed_img_array = np.clip(transformed_img_array, 0, 255)
+        # Aplicar a transformação linear definida por partes em cada canal
+        for start, end, slope in segments:
+            mask = (red_channel >= start) & (red_channel <= end)
+            transformed_red[mask] = slope * (red_channel[mask] - start)
 
-    # Converter de volta para uint8
-    transformed_img_array = transformed_img_array.astype('uint8')
+            mask = (green_channel >= start) & (green_channel <= end)
+            transformed_green[mask] = slope * (green_channel[mask] - start)
+
+            mask = (blue_channel >= start) & (blue_channel <= end)
+            transformed_blue[mask] = slope * (blue_channel[mask] - start)
+
+        # Normalizar os valores para o intervalo [0, 255]
+        transformed_red = np.clip(transformed_red, 0, 255)
+        transformed_green = np.clip(transformed_green, 0, 255)
+        transformed_blue = np.clip(transformed_blue, 0, 255)
+
+        # Empilhar os canais transformados de volta em uma imagem RGB
+        transformed_img_array = np.stack((transformed_red, transformed_green, transformed_blue), axis=-1)
+    else:  # Imagem em escala de cinza
+        # Inicializar uma matriz para armazenar a imagem transformada
+        transformed_img_array = np.zeros_like(img_array)
+
+        # Aplicar a transformação linear definida por partes
+        for i, segment in enumerate(segments):
+            start, end, slope = segment
+            mask = (img_array >= start) & (img_array <= end)
+            transformed_img_array[mask] = slope * (img_array[mask] - start)
+
+        # Normalizar os valores para o intervalo [0, 255]
+        transformed_img_array = np.clip(transformed_img_array, 0, 255)
 
     # Criar uma nova imagem a partir do array transformado
-    transformed_image = PIL.Image.fromarray(transformed_img_array)
+    transformed_image = PIL.Image.fromarray(transformed_img_array.astype('uint8'))
 
     return transformed_image
 
@@ -222,5 +302,90 @@ def convolution(image_array, kernel):
         for j in range(width):
             region = padded_image[i:i+k_height, j:j+k_width]
             result[i, j] = np.sum(region * kernel)
+
+    return result
+
+def apply_binarization(image, threshold):
+    grayscale_image = image.convert('L')
+    img_array = np.array(grayscale_image)
+    
+    # Aplicar a binarização
+    binarized_array = np.where(img_array >= threshold, 255, 0)
+    
+    # Criar uma nova imagem binarizada
+    binarized_image = PIL.Image.fromarray(binarized_array.astype('uint8'))
+    
+    return binarized_image
+
+def apply_mean_smoothing(image):
+    img_array = np.array(image)
+
+    # Aplicar a suavização da média usando um kernel 3x3
+    kernel = np.ones((3, 3)) / 9
+    smoothed_array = convolution(img_array, kernel)
+
+    # Normalizar os valores para o intervalo [0, 255]
+    smoothed_array = (smoothed_array / np.max(smoothed_array)) * 255
+
+    # Converter de volta para uint8
+    smoothed_array = smoothed_array.astype('uint8')
+
+    # Criar uma nova imagem a partir do array suavizado
+    smoothed_image = PIL.Image.fromarray(smoothed_array)
+
+    return smoothed_image
+
+def apply_weighted_mean_smoothing(image, custom_kernel):
+    img_array = np.array(image)
+
+    # Normalizar o kernel para garantir que a soma seja 1
+    kernel_sum = np.sum(custom_kernel)
+    normalized_kernel = custom_kernel / kernel_sum if kernel_sum != 0 else custom_kernel
+
+    # Aplicar a suavização da média ponderada usando o kernel fornecido
+    smoothed_array = convolution(img_array, normalized_kernel)
+
+    # Normalizar os valores para o intervalo [0, 255]
+    smoothed_array = (smoothed_array / np.max(smoothed_array)) * 255
+
+    # Converter de volta para uint8
+    smoothed_array = smoothed_array.astype('uint8')
+
+    # Criar uma nova imagem a partir do array suavizado
+    smoothed_image = PIL.Image.fromarray(smoothed_array)
+
+    return smoothed_image
+
+def apply_median_filter(image, filter_size):
+    # Converter a imagem para escala de cinza
+    grayscale_image = image.convert('L')
+    img_array = np.array(grayscale_image)
+
+    # Aplicar a filtragem pela mediana
+    filtered_image_array = median_filter(img_array, filter_size)
+
+    # Converter de volta para uint8
+    filtered_image_array = filtered_image_array.astype('uint8')
+
+    # Criar uma nova imagem a partir do array transformado
+    filtered_image = PIL.Image.fromarray(filtered_image_array)
+
+    return filtered_image
+
+def median_filter(image_array, filter_size):
+    height, width = image_array.shape
+    pad = filter_size // 2
+
+    # Aplicar zero padding
+    padded_image = np.pad(image_array, pad, mode='constant')
+
+    # Inicializar a matriz resultante
+    result = np.zeros((height, width))
+
+    # Realizar a filtragem pela mediana
+    for i in range(height):
+        for j in range(width):
+            region = padded_image[i:i+filter_size, j:j+filter_size]
+            result[i, j] = np.median(region)
 
     return result
