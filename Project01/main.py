@@ -35,7 +35,7 @@ image_viewer_column = [
     [sg.Text("Choose an image from list on the left:")],
     [sg.Text(f'Displaying image: '), sg.Text(k='-FILENAME-')],
     [sg.Image(key="-IMAGE-")],
-    [sg.HorizontalSeparator(pad=(5, 10)), sg.Button("Save Image")],
+    [sg.HorizontalSeparator(pad=(5, 10)), sg.Button("Salvar Imagem")],
 ]
 
 filter_column = [
@@ -111,6 +111,16 @@ while True:
             image_data = convert_to_bytes(resized_image)
             window['-IMAGE-'].update(data=image_data)
 
+        except Exception as e:
+            print(e)
+
+    elif event == 'Salvar Imagem':
+        try:
+            if 'image' in locals():
+                save_filename = sg.popup_get_file('Salvar imagem como:', save_as=True, default_extension=".png", file_types=(("PNG Files", "*.png"), ("All Files", "*.*")))
+                if save_filename:
+                    resized_rotated_image.save(save_filename)
+                    print(f'Imagem salva como: {save_filename}')
         except Exception as e:
             print(e)
 
