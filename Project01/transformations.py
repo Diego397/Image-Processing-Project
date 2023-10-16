@@ -344,7 +344,6 @@ def apply_filter_color(image_array, custom_filter):
     filtered_image_array = np.stack((filtered_r, filtered_g, filtered_b), axis=-1)
     return filtered_image_array
 
-
 def convolution(image_array, kernel):
     height, width = image_array.shape
     k_height, k_width = kernel.shape
@@ -757,7 +756,6 @@ def apply_chroma_key(original_image, chroma_image, green_threshold=100):
     chroma_keyed_image = PIL.Image.fromarray(original_image_array, 'RGB')
 
     return chroma_keyed_image
-
 
 def apply_scale_nearest(image, scale_factor):
     img_array = np.array(image)

@@ -1,74 +1,67 @@
 import PySimpleGUI as sg
 import os.path
-import io
 import PIL.Image
+from tkinter import filedialog
 from fractions import Fraction
 import colorsys
 from transformations import *
+from utils import *
 
-def convert_to_bytes(image, format="PNG"):
-    with io.BytesIO() as bio:
-        image.save(bio, format=format)
-        return bio.getvalue()
-
-def resize_image(image, max_width, max_height):
-    width, height = image.size
-    if width > max_width or height > max_height:
-        aspect_ratio = width / height
-        if width > max_width:
-            new_width = max_width
-            new_height = int(new_width / aspect_ratio)
-        else:
-            new_height = max_height
-            new_width = int(new_height * aspect_ratio)
-        image = image.resize((new_width, new_height))
-    return image
-
-# Primeira coluna
 file_list_column = [   
     [sg.Text("Image Folder"), sg.In(size=(25, 1), enable_events=True, key="-FOLDER-"), sg.FolderBrowse()],
     [sg.Listbox(values=[], enable_events=True, size=(40, 20), key="-FILE LIST-")]
 ]
 
-# A coluna para exibir a imagem
 image_viewer_column = [
     [sg.Text("Choose an image from list on the left:")],
     [sg.Text(f'Displaying image: '), sg.Text(k='-FILENAME-')],
     [sg.Image(key="-IMAGE-")],
-    [sg.HorizontalSeparator(pad=(5, 10)), sg.Button("Salvar Imagem")],
+    [sg.HorizontalSeparator(pad=(5, 10)), sg.Button('Salvar Imagem', key='-SAVE-')],
 ]
 
 filter_column = [
     [sg.Button("Negativo")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Transformação Logarítmica"), sg.Text("Constante 'c':"), sg.InputText(key="-C-")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Potência"), sg.Text("Valor de Gama:"), sg.InputText(key="-GAMMA-")],
-    [sg.Button("Transformação Linear definida por partes")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Text("Segmento 1 Inicio:"), sg.InputText(key="-SEGMENT1_START-")],
     [sg.Text("Segmento 1 Fim:"), sg.InputText(key="-SEGMENT1_END-")],
     [sg.Text("Segmento 1 Inclinação:"), sg.InputText(key="-SEGMENT1_SLOPE-")],
     [sg.Text("Segmento 2 Inicio:"), sg.InputText(key="-SEGMENT2_START-")],
     [sg.Text("Segmento 2 Fim:"), sg.InputText(key="-SEGMENT2_END-")],
     [sg.Text("Segmento 2 Inclinação:"), sg.InputText(key="-SEGMENT2_SLOPE-")],
+    [sg.Button("Aplicar Transformação Linear definida por partes")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Esconder Mensagem"), sg.Button("Revelar Mensagem"), sg.Text("Menssagem:"), sg.InputText(key="-MESSAGE-")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Exibir histograma"), sg.Button("Equalizar Histograma")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Binarizar"), sg.Text("Valor de Threshold:"), sg.InputText(key="-THRESHOLD-")],
-    [sg.Button("Apply Mean Smoothing Filter")],
-    [sg.Button("Apply Custom Weighted Mean Smoothing Filter"), sg.Text("Custom Kernel (comma-separated values):"), sg.InputText(key="-CUSTOM_KERNEL-")],
-    [sg.Text("Filter Size (odd number):"), sg.InputText(key="-FILTER_SIZE-")],
-    [sg.Text("Custom Filter (comma-separated values):"), sg.InputText(key="-CUSTOM_FILTER-")],
-    [sg.Button("Apply Custom Filter")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
+    [sg.Button("Filtro de Média"), sg.Button("Filtro de Mediana")],
+    # [sg.Button("Fitro de")]
+    [sg.HorizontalSeparator(pad=(1, 1))],
+    [sg.Text("Tamanho do filtro:"), sg.InputText(key="-FILTER_SIZE-", size=(5, 1)), sg.Text("Filtro customizado (separado por virgula):"), sg.InputText(key="-CUSTOM_FILTER-")],
+    [sg.Button("Aplicar filtro customizado")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Laplacian Filter"), sg.Button("High Boost"), sg.InputText(key="-HIGH_BOOST_FACTOR-")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Sobel Filter"), sg.Button("Edge Detection")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Fourier Transform"), sg.Button("Inverse Fourier Transform"), sg.Button("Fast Fourier Transform"), sg.Button("NumPy Fast Fourier Transform")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("RGB to HSV"), sg.Button("HSV to RGB")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Button("Chroma Key"), sg.Input(key="-CHROMA_IMAGE-", visible=False), sg.FileBrowse("Select Chroma Image", key="-CHROMA_BROWSE-")],
+    [sg.HorizontalSeparator(pad=(1, 1))],
     [sg.Text('Fator de Escala:'), sg.Input(key='-SCALE-', size=(10, 1)), sg.Button('Escala (Vizinho mais próximo)')],
     [sg.Text('Fator de Escala:'), sg.Input(key='-SCALE-LIN-', size=(10, 1)), sg.Button('Escala (Linear)')],
     [sg.Text('Ângulo de Rotação:'), sg.Input(key='-ANGLE-', size=(10, 1)), sg.Button('Rotação (Vizinho mais próximo)')],
     [sg.Text('Ângulo de Rotação:'), sg.Input(key='-ANGLE-LIN-', size=(10, 1)), sg.Button('Rotação (Linear)')],
 ]
 
-# ----- Layout completo -----
 layout = [
     [
         sg.Column(file_list_column),
@@ -81,8 +74,6 @@ layout = [
 
 window = sg.Window("Image Viewer", layout)
 
-
-# Loop de eventos
 while True:
     event, values = window.read()
     if event == "Exit" or event == sg.WIN_CLOSED:
@@ -114,13 +105,15 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == 'Salvar Imagem':
+    elif event == '-SAVE-':
         try:
             if 'image' in locals():
-                save_filename = sg.popup_get_file('Salvar imagem como:', save_as=True, default_extension=".png", file_types=(("PNG Files", "*.png"), ("All Files", "*.*")))
-                if save_filename:
-                    resized_rotated_image.save(save_filename)
-                    print(f'Imagem salva como: {save_filename}')
+                file_types = [("PNG files", "*.png"), ("JPEG files", "*.jpg"), ("All files", "*.*")]
+                filename = filedialog.asksaveasfilename(defaultextension=".png", filetypes=file_types)
+                if filename:
+                    image.save(filename)
+                    print("Imagem salva com sucesso em:", filename)
+
         except Exception as e:
             print(e)
 
@@ -172,7 +165,7 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == "Transformação Linear definida por partes":
+    elif event == "Aplicar Transformação Linear definida por partes":
         try:
             if "image" in locals():
                 # Obter os valores inseridos pelo usuário para os segmentos
@@ -254,7 +247,7 @@ while True:
         except Exception as e:
             print("Ocorreu um erro ao equalizar o histograma:", str(e))
 
-    elif event == "Apply Custom Filter":
+    elif event == "Aplicar filtro customizado":
         try:
             if "image" in locals():
                 # Obter o tamanho do filtro inserido pelo usuário
@@ -304,7 +297,7 @@ while True:
         except Exception as e:
             print(e)
 
-    elif event == "Apply Mean Smoothing Filter":
+    elif event == "Filtro de Média":
         try:
             if "image" in locals():
                 # Aplicar suavização da média à imagem
